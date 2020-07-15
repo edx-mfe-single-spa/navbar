@@ -66,16 +66,13 @@ jobs:
             gcloud auth activate-service-account --key-file google-application-credentials.json
 
             echo "Commit sha is $CIRCLE_SHA1. This will be the directory name under $CIRCLE_PROJECT_REPONAME in Cloud Storage."
-            echo "Uploading root-config module"
-            mv dist/index.html .
+            echo "Uploading navbar module"
             gsutil cp -rZ dist gs://$BUCKET_NAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_SHA1
 
             # Step 2
             echo "Updating import map"
             echo '{ "service":"@edx/'"$CIRCLE_PROJECT_REPONAME"'","url":"https://'"$CF_PUBLIC_URL"'/'"$CIRCLE_PROJECT_REPONAME"'/'"$CIRCLE_SHA1"'/edx-'"$CIRCLE_PROJECT_REPONAME"'.js" }'
             curl -u $DEPLOYER_USERNAME:$DEPLOYER_PASSWORD -d '{ "service":"@edx/'"$CIRCLE_PROJECT_REPONAME"'","url":"https://'"$CF_PUBLIC_URL"'/'"$CIRCLE_PROJECT_REPONAME"'/'"$CIRCLE_SHA1"'/edx-'"$CIRCLE_PROJECT_REPONAME"'.js" }' -X PATCH http://$DEPLOYER_HOST/services\?env=$DEPLOYER_ENV -H "Accept:application/json" -H "Content-Type:application/json" --fail --insecure -i
-            echo "Uploading index.html file"
-            gsutil cp ./index.html gs://$BUCKET_NAME
 
 workflows:
   version: 2
