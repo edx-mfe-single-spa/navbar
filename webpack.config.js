@@ -4,7 +4,7 @@ const path = require("path");
 
 module.exports = (webpackConfigEnv) => {
   const defaultConfig = singleSpaDefaults({
-    orgName: "react-mf",
+    orgName: "edx",
     projectName: "navbar",
     webpackConfigEnv,
   });

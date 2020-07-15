@@ -1,3 +1,3 @@
 import { setPublicPath } from "systemjs-webpack-interop";
 
-setPublicPath("@react-mf/navbar");
+setPublicPath("@edx/navbar");
