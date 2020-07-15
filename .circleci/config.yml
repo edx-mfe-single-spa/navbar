@@ -6,12 +6,12 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: dependency-cache-{{ checksum "yarn.lock" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: Install
-          command: yarn install --frozen-lockfile
+          command: npm ci
       - save_cache:
-          key: dependency-cache-{{ checksum "yarn.lock" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
           paths:
             - node_modules
   build:
@@ -20,11 +20,11 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: dependency-cache-{{ checksum "yarn.lock" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: Build
           command: |
-            yarn build
+            npm run build
             ls dist
       - save_cache:
           key: build-output-{{ .Environment.CIRCLE_SHA1 }}
@@ -39,10 +39,10 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: dependency-cache-{{ checksum "yarn.lock" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: Test and Lint
-          command: yarn lint
+          command: npm run lint
   deploy:
     docker:
       - image: google/cloud-sdk
@@ -54,6 +54,7 @@ jobs:
       - run:
           name: Deploy
           command: |
+            # Step 1
             echo "Going to correct directory"
             cd /home/circleci/project/
             ls dist
@@ -65,12 +66,16 @@ jobs:
             gcloud auth activate-service-account --key-file google-application-credentials.json
 
             echo "Commit sha is $CIRCLE_SHA1. This will be the directory name under $CIRCLE_PROJECT_REPONAME in Cloud Storage."
-
-            echo "Uploading navbar module"
+            echo "Uploading root-config module"
+            mv dist/index.html .
             gsutil cp -rZ dist gs://$BUCKET_NAME/$CIRCLE_PROJECT_REPONAME/$CIRCLE_SHA1
+
+            # Step 2
             echo "Updating import map"
-            echo '{ "service":"@react-mf/'"$CIRCLE_PROJECT_REPONAME"'","url":"https://'"$CF_PUBLIC_URL"'/'"$CIRCLE_PROJECT_REPONAME"'/'"$CIRCLE_SHA1"'/react-mf-'"$CIRCLE_PROJECT_REPONAME"'.js" }'
-            curl -u $DEPLOYER_USERNAME:$DEPLOYER_PASSWORD -d '{ "service":"@react-mf/'"$CIRCLE_PROJECT_REPONAME"'","url":"https://'"$CF_PUBLIC_URL"'/'"$CIRCLE_PROJECT_REPONAME"'/'"$CIRCLE_SHA1"'/react-mf-'"$CIRCLE_PROJECT_REPONAME"'.js" }' -X PATCH http://$DEPLOYER_HOST/services\?env=$DEPLOYER_ENV -H "Accept:application/json" -H "Content-Type:application/json" --fail --insecure -i
+            echo '{ "service":"@edx/'"$CIRCLE_PROJECT_REPONAME"'","url":"https://'"$CF_PUBLIC_URL"'/'"$CIRCLE_PROJECT_REPONAME"'/'"$CIRCLE_SHA1"'/edx-'"$CIRCLE_PROJECT_REPONAME"'.js" }'
+            curl -u $DEPLOYER_USERNAME:$DEPLOYER_PASSWORD -d '{ "service":"@edx/'"$CIRCLE_PROJECT_REPONAME"'","url":"https://'"$CF_PUBLIC_URL"'/'"$CIRCLE_PROJECT_REPONAME"'/'"$CIRCLE_SHA1"'/edx-'"$CIRCLE_PROJECT_REPONAME"'.js" }' -X PATCH http://$DEPLOYER_HOST/services\?env=$DEPLOYER_ENV -H "Accept:application/json" -H "Content-Type:application/json" --fail --insecure -i
+            echo "Uploading index.html file"
+            gsutil cp ./index.html gs://$BUCKET_NAME
 
 workflows:
   version: 2
